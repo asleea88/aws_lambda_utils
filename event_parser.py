@@ -1,6 +1,6 @@
 import json
-from logger import get_logger
-from exceptions import InternalError, Warming
+from .logger import get_logger
+from .exceptions import InternalError, Warming
 from abc import ABC
 
 
