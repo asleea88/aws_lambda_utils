@@ -1,7 +1,6 @@
 import json
-from src.logger import get_logger
-from src.exceptions import InternalError, Warming
-from src import settings
+from logger import get_logger
+from exceptions import InternalError, Warming
 from abc import ABC
 
 
@@ -14,7 +13,7 @@ class EventParser(ABC):
         self.is_warming(event)
 
     def is_warming(self, event):
-        if 'source' in event and event['source'] == settings.WARMING_RESOURCE:
+        if 'source' in event and event['source'] == 'warmup':
             self.logger.debug('Warming lambda...')
             raise Warming
 
@@ -84,4 +83,3 @@ class S3EventParser(EventParser):
             })
 
         self.logger.info('EventParser: %s' % (self.records,))
-
