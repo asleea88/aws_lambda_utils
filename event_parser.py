@@ -147,3 +147,15 @@ class AsyncEventParser(EventParser):
         self.logger.debug(
             '%s: %s' % (self.__class__.__name__, self.records)
         )
+
+    def get_records(self):
+        records = []
+
+        records.extend(self.records['s3'])
+
+        for sns_record in self.records['sns']:
+            records.extend(
+                sns_record.get_sub_record()['s3']
+            )
+
+        return records
