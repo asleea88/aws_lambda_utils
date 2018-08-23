@@ -1,6 +1,6 @@
 import json
 from .logger import get_logger
-from .exceptions import Warming
+from .exceptions import Warming, InternalError
 from abc import ABC
 
 
@@ -95,6 +95,7 @@ class S3EventSource(EventSource):
 
     def __init__(self, record):
         super().__init__(record)
+
         self._record = {
             'event_name': record['eventName'],
             'event_time': record['eventTime'],
@@ -109,7 +110,8 @@ class SnsEventSource(EventSource):
     def __init__(self, record):
         super().__init__(record)
         self._record = {
-            'message': record['Sns']['Message']
+            'message': record['Sns']['Message'],
+            'subject': record['Sns']['Subject']
         }
         self.json_msg = json.loads(self._record['message'])
         self.log_source()
@@ -119,9 +121,14 @@ class SnsEventSource(EventSource):
         return parser.records
 
     def log_source(self):
+        if 'Records' in self.json_msg:
+            n = len(self.json_msg['Records'])
+        else:
+            n = 0  # When new notification is added.
+
         self.logger.info(
             '%s: inner message(%s)'
-            % (self.__class__.__name__, len(self.json_msg['Records']))
+            % (self.__class__.__name__, n)
         )
 
 
@@ -135,24 +142,29 @@ class AsyncEventParser(EventParser):
             'sns': []
         }
 
-        for record in self._event['Records']:
-
-            if 'EventSource' in record:
-                event_src = record['EventSource']
-            elif 'eventSource' in record:
-                event_src = record['eventSource']
-            else:
-                assert None
-
-            if event_src == 'aws:s3':
-                self.records['s3'].append(S3EventSource(record))
-
-            elif event_src == 'aws:sns':
-                self.records['sns'].append(SnsEventSource(record))
+        try:
+            for record in self._event['Records']:
+                self.__handler(record)
+        except KeyError:
+            raise InternalError('NoRecord')
 
         self.logger.debug(
             '%s: %s' % (self.__class__.__name__, self.records)
         )
+
+    def __handler(self, record):
+        if 'EventSource' in record:
+            event_src = record['EventSource']
+        elif 'eventSource' in record:
+            event_src = record['eventSource']
+        else:
+            assert None
+
+        if event_src == 'aws:s3':
+            self.records['s3'].append(S3EventSource(record))
+
+        elif event_src == 'aws:sns':
+            self.records['sns'].append(SnsEventSource(record))
 
     def get_records(self):
         records = []
