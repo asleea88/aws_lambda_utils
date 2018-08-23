@@ -118,6 +118,12 @@ class SnsEventSource(EventSource):
         parser = AsyncEventParser(self.json_msg)
         return parser.records
 
+    def log_source(self):
+        self.logger.info(
+            '%s: inner message(%s)'
+            % (self.__class__.__name__, len(self.json_msg['Records']))
+        )
+
 
 class AsyncEventParser(EventParser):
 
