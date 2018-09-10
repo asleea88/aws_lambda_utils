@@ -2,23 +2,32 @@ from .logger import get_logger
 from .exceptions import Warming
 
 
-def common_lambda_handler(func):
+class common_lambda_handler:
 
-    def f(event, context):
-        try:
-            logger = get_logger('%s' % context.aws_request_id, True)
-            rtn = func(event, context)
+    def __init__(self, exp_propagate=True):
+        self.exp_propagate = exp_propagate
 
-        except Warming as e:
-            return
+    def __call__(self, func):
 
-        except Exception as e:
-            logger.exception(e)
-            raise Exception(
-                'Lambda Error(%s, %s)'
-                % (context.aws_request_id, e.__class__.__name__)
-            )
+        def f(event, context):
+            try:
+                logger = get_logger('%s' % context.aws_request_id, True)
+                rtn = func(event, context)
 
-        return rtn
+            except Warming as e:
+                return
 
-    return f
+            except Exception as e:
+                logger.exception(e)
+
+                if not self.exp_propagate:
+                    return
+
+                raise Exception(
+                    'Lambda Error(%s, %s)'
+                    % (context.aws_request_id, e.__class__.__name__)
+                )
+
+            return rtn
+
+        return f

@@ -105,10 +105,23 @@ class S3EventSource(EventSource):
         self.log_source()
 
 
+class SqsEventSource(EventSource):
+
+    def __init__(self, record):
+        super().__init__(record)
+
+        self._record = {
+            'body': record['body'],
+            'attributes': record['attributes']
+        }
+        self.log_source()
+
+
 class SnsEventSource(EventSource):
 
     def __init__(self, record):
         super().__init__(record)
+
         self._record = {
             'message': record['Sns']['Message'],
             'subject': record['Sns']['Subject']
@@ -139,7 +152,8 @@ class AsyncEventParser(EventParser):
         self._event = event
         self.records = {
             's3': [],
-            'sns': []
+            'sns': [],
+            'sqs': []
         }
 
         try:
@@ -166,7 +180,15 @@ class AsyncEventParser(EventParser):
         elif event_src == 'aws:sns':
             self.records['sns'].append(SnsEventSource(record))
 
+        elif event_src == 'aws:sqs':
+            self.records['sqs'].append(SqsEventSource(record))
+
     def get_records(self):
+        """
+        Summary:
+           In order for compatibility between direct S3 event
+           and proxy S3 event(SNS).
+        """
         records = []
 
         records.extend(self.records['s3'])
