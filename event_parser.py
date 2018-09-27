@@ -81,14 +81,21 @@ class EventSource():
         self.event_src = self.__class__.__name__
         self.logger = get_logger()
 
-    def log_source(self):
-        self.logger.info('%s: %s' % (self.__class__.__name__, self._record))
+    def log_source(self, as_debug=False):
+        if as_debug:
+            self.logger.debug(
+                '%s: %s' % (self.__class__.__name__, self._record)
+            )
+        else:
+            self.logger.info(
+                '%s: %s' % (self.__class__.__name__, self._record)
+            )
 
     def __getitem__(self, key):
         return self._record[key]
 
     def __str__(self):
-        return self._record
+        return str(self._record)
 
 
 class S3EventSource(EventSource):
@@ -112,9 +119,11 @@ class SqsEventSource(EventSource):
 
         self._record = {
             'body': record['body'],
-            'attributes': record['attributes']
+            'attributes': record['attributes'],
+            'messageId': record['messageId'],
+            'receiptHandle': record['receiptHandle']
         }
-        self.log_source()
+        self.log_source(True)
 
 
 class SnsEventSource(EventSource):
