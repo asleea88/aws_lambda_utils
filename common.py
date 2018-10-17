@@ -7,7 +7,7 @@ class common_lambda_handler:
 
     def __init__(self, exp_propagate=True, custom_error_metric=False):
         self.exp_propagate = exp_propagate
-        self.cumtom_error_metric = custom_error_metric
+        self.custom_error_metric = custom_error_metric
 
     def __call__(self, func):
 
