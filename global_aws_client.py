@@ -43,5 +43,11 @@ class AWSClient:
             CiphertextBlob=b64decode(value)
         )['Plaintext'].decode()
 
+    def sqs_delete_message(self, sqs_url, receipt_handle):
+        self['sqs'].delete_message(
+            QueueUrl=sqs_url,
+            ReceiptHandle=receipt_handle
+        )
+
 
 aws_client = AWSClient()
