@@ -20,18 +20,20 @@ class AWSClient:
 
         return aws_client
 
-    def cwh_custom_err_metric(self, function_name):
+    def cwh_custom_metric(
+        self, function_name, metric_name, unit='Count', value=1
+    ):
         self['cloudwatch'].put_metric_data(
             MetricData=[
                 {
-                    'MetricName': 'Errors',
+                    'MetricName': metric_name,
                     'Dimensions': [
                         {
                             'Name': 'FunctionName',
                             'Value': function_name
                         }
                     ],
-                    'Value': 1,
+                    'Value': value,
                     'Unit': 'Count'
                 }
             ],
