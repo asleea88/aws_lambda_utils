@@ -40,7 +40,7 @@ class AWSClient:
             Namespace='Lambda'
         )
 
-    def ksm_decrypt(self, value):
+    def kms_decrypt(self, value):
         return self['kms'].decrypt(
             CiphertextBlob=b64decode(value)
         )['Plaintext'].decode()
