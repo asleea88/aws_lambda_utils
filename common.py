@@ -23,7 +23,10 @@ class common_lambda_handler:
                 logger.exception(e)
 
                 if self.custom_error_metric:
-                    aws_client.cwh_custom_err_metric(context.function_name)
+                    aws_client.cwh_custom_metric(
+                        context.function_name, 'Errors',
+                        unit='Count', value=1
+                    )
 
                 if not self.exp_propagate:
                     return
