@@ -1,16 +1,42 @@
+import functools
+import traceback
 from .logger import get_logger
-from .exceptions import Warming
-from .global_aws_client import aws_client
+from .exceptions import Warming, InternalError
+
+
+def retry_against_exception(func, max_num=3, exp_list=(Exception, )):
+
+    @functools.wraps(func)
+    def f(*args, **kwargs):
+        for i in range(1, max_num+1):
+            try:
+                return func(*args, **kwargs)
+
+            except exp_list as e:
+                get_logger().error(
+                    'Retry Count(%s): %s' % (i, traceback.format_exc())
+                )
+
+                if i >= max_num:
+                    # When reaching the maximum number of retry.
+                    get_logger().warning(
+                        'Escape retry loop after %s try' % max_num
+                    )
+                    raise e
+
+        raise InternalError('Unexpected Error')
+
+    return f
 
 
 class common_lambda_handler:
 
-    def __init__(self, exp_propagate=True, custom_error_metric=False):
+    def __init__(self, exp_propagate=True):
         self.exp_propagate = exp_propagate
-        self.custom_error_metric = custom_error_metric
 
     def __call__(self, func):
 
+        @functools.wraps(func)
         def f(event, context):
             try:
                 logger = get_logger('%s' % context.aws_request_id, True)
@@ -21,12 +47,6 @@ class common_lambda_handler:
 
             except Exception as e:
                 logger.exception(e)
-
-                if self.custom_error_metric:
-                    aws_client.cwh_custom_metric(
-                        context.function_name, 'Errors',
-                        unit='Count', value=1
-                    )
 
                 if not self.exp_propagate:
                     return
