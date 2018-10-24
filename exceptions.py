@@ -13,6 +13,16 @@ class NoSuchOriginKey(LambdaUtilsException):
         super().__init__(err_msg, **kwargs)
 
 
+class ExceedMaximumRetry(LambdaUtilsException):
+    def __init__(self, err_msg, **kwargs):
+        super().__init__(err_msg, **kwargs)
+
+
+class UnexpectedError(LambdaUtilsException):
+    def __init__(self, err_msg, **kwargs):
+        super().__init__(err_msg, **kwargs)
+
+
 class InternalError(LambdaUtilsException):
     """
     err_msg

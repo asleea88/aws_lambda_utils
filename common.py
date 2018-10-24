@@ -1,7 +1,7 @@
 import functools
 import traceback
 from .logger import get_logger
-from .exceptions import Warming, InternalError
+from .exceptions import Warming, ExceedMaximumRetry, UnexpectedError
 
 
 def retry_against_exception(func, max_num=3, exp_list=(Exception, )):
@@ -22,9 +22,11 @@ def retry_against_exception(func, max_num=3, exp_list=(Exception, )):
                     get_logger().warning(
                         'Escape retry loop after %s try' % max_num
                     )
-                    raise e
+                    raise ExceedMaximumRetry(
+                        'Exceed the maximum number of retry(%s)' % max_num
+                    )
 
-        raise InternalError('Unexpected Error')
+        raise UnexpectedError('Unexpected error, it MUST not be printed')
 
     return f
 
