@@ -1,30 +1,43 @@
 import functools
+import time
 import traceback
 from .logger import get_logger
 from .exceptions import Warming, ExceedMaximumRetry, UnexpectedError
 
 
-def retry_against_exception(func, max_num=3, exp_list=(Exception, )):
+def retry_against_exception(
+    func, retry_num=3, excp_list=(Exception, ), interval=1
+):
+    """Common retry decorator against exceptions.
+
+    Args:
+        func: Function to be retried.
+        retry_num: The maximum number of retry.
+        excp_list: Target to catch exception and retry.
+        interval: Interval between retries.
+    """
 
     @functools.wraps(func)
     def f(*args, **kwargs):
-        for i in range(1, max_num+1):
+        for i in range(1, retry_num+1):
             try:
                 return func(*args, **kwargs)
 
-            except exp_list as e:
+            except excp_list as e:
                 get_logger().error(
                     'Retry Count(%s): %s' % (i, traceback.format_exc())
                 )
 
-                if i >= max_num:
+                if i >= retry_num:
                     # When reaching the maximum number of retry.
                     get_logger().warning(
-                        'Escape retry loop after %s try' % max_num
+                        'Escape retry loop after %s try' % retry_num
                     )
                     raise ExceedMaximumRetry(
-                        'Exceed the maximum number of retry(%s)' % max_num
+                        'Exceed the maximum number of retry(%s)' % retry_num
                     )
+
+                time.sleep(interval)
 
         raise UnexpectedError('Unexpected error, it MUST not be printed')
 
@@ -32,9 +45,19 @@ def retry_against_exception(func, max_num=3, exp_list=(Exception, )):
 
 
 class common_lambda_handler:
+    """Common decorator for lambda_fucntion.
 
-    def __init__(self, exp_propagate=True):
-        self.exp_propagate = exp_propagate
+    It Initializes logger named `aws_request_id` and catch Warming exception.
+    """
+    def __init__(self, excp_propagate=True):
+        """
+        Args:
+            excep_propagate: Flag if the exception should be progataed or not.
+                If an exception is propagated to out of the lambda function,
+                It will be counted in CloudWatch `Error` metric and could be
+                retried depending on evnet source.
+        """
+        self.excp_propagate = excp_propagate
 
     def __call__(self, func):
 
@@ -50,7 +73,7 @@ class common_lambda_handler:
             except Exception as e:
                 logger.exception(e)
 
-                if not self.exp_propagate:
+                if not self.excp_propagate:
                     return
 
                 raise Exception(
