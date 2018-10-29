@@ -1,4 +1,5 @@
 import boto3
+from botocore.client import Config
 from base64 import b64decode
 
 
@@ -10,12 +11,16 @@ class AWSClient:
     """
     def __init__(self):
         self._client_dict = {}
+        self.boto_config = Config(
+            connect_timeout=5, read_timeout=5,
+            retries={'max_attempts': 0}
+        )
 
     def __getitem__(self, key):
         try:
             aws_client = self._client_dict[key]
         except KeyError as e:
-            aws_client = boto3.client(key)
+            aws_client = boto3.client(key, config=self.boto_config)
             self._client_dict[key] = aws_client
 
         return aws_client
