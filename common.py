@@ -6,7 +6,7 @@ from .exceptions import Warming, ExceedMaximumRetry, UnexpectedError
 
 
 def retry_against_exception(
-    func, retry_num=3, excp_list=(Exception, ), interval=1
+    func, retry_num=2, excp_list=(Exception, ), interval=2
 ):
     """Common retry decorator against exceptions.
 
@@ -19,13 +19,14 @@ def retry_against_exception(
 
     @functools.wraps(func)
     def f(*args, **kwargs):
-        for i in range(1, retry_num+1):
+        for i in range(retry_num+1):
+            req_cnt = i + 1
             try:
                 return func(*args, **kwargs)
 
             except excp_list as e:
                 get_logger().error(
-                    'Retry Count(%s): %s' % (i, traceback.format_exc())
+                    'Retry Count(%s): %s' % (req_cnt, traceback.format_exc())
                 )
 
                 if i >= retry_num:
@@ -37,7 +38,7 @@ def retry_against_exception(
                         'Exceed the maximum number of retry(%s)' % retry_num
                     )
 
-                time.sleep(interval)
+                time.sleep(interval * req_cnt)
 
         raise UnexpectedError('Unexpected error, it MUST not be printed')
 
@@ -84,3 +85,11 @@ class common_lambda_handler:
             return rtn
 
         return f
+
+
+def iter_partial_list(target_list, split_num):
+    partial_num_list = [
+        x for x in range(0, len(target_list), split_num)
+    ]
+    for n in partial_num_list:
+        yield target_list[n:n+split_num]

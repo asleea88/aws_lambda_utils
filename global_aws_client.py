@@ -13,7 +13,7 @@ class AWSClient:
         self._client_dict = {}
         self.boto_config = Config(
             connect_timeout=5, read_timeout=5,
-            retries={'max_attempts': 0}
+            retries={'max_attempts': 2}
         )
 
     def __getitem__(self, key):
