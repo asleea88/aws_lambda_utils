@@ -26,7 +26,7 @@ def retry_against_exception(
 
             except excp_list as e:
                 get_logger().error(
-                    'Retry Count(%s): %s' % (req_cnt, traceback.format_exc())
+                    'Request Count(%s): %s' % (req_cnt, traceback.format_exc())
                 )
 
                 if i >= retry_num:
