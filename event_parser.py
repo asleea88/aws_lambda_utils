@@ -1,6 +1,6 @@
 import json
 from .logger import get_logger
-from .exceptions import Warming, InternalError
+from .exceptions import InternalError
 from abc import ABC
 
 
@@ -10,13 +10,6 @@ class EventParser(ABC):
         self.logger = get_logger()
         self.records = []
         self._event = event
-        self.logger.debug('event: %s' % json.dumps(event, indent=4))
-        self.is_warming(event)
-
-    def is_warming(self, event):
-        if 'source' in event and event['source'] == 'warmup':
-            self.logger.debug('Warming lambda...')
-            raise Warming
 
 
 class S3EventParser(EventParser):
@@ -157,9 +150,10 @@ class SnsEventSource(EventSource):
 
 class AsyncEventParser(EventParser):
 
-    def __init__(self, event):
+    def __init__(self, event, allowed_event_source='*'):
         super().__init__(event)
         self._event = event
+        self.allowed_event_source = allowed_event_source
         self.records = {
             's3': [],
             'sns': [],
@@ -169,6 +163,7 @@ class AsyncEventParser(EventParser):
         try:
             for record in self._event['Records']:
                 self.__handler(record)
+
         except KeyError:
             raise InternalError('NoRecord')
 
@@ -176,13 +171,33 @@ class AsyncEventParser(EventParser):
             '%s: %s' % (self.__class__.__name__, self.records)
         )
 
-    def __handler(self, record):
+    def _get_event_source(self, record):
         if 'EventSource' in record:
             event_src = record['EventSource']
         elif 'eventSource' in record:
             event_src = record['eventSource']
         else:
             assert None
+
+        return event_src
+
+    def _is_allowed(self, event_source):
+        if self.allowed_event_source == '*':
+            return True
+        if event_source in self.allowed_event_source:
+            return True
+
+        return False
+
+    def __handler(self, record):
+
+        event_src = self._get_event_source(record)
+
+        if not self._is_allowed(event_src):
+            raise InternalError(
+                'NotAllowedEventSource: %s not in %s '
+                % (event_src, self.allowed_event_source)
+            )
 
         if event_src == 'aws:s3':
             self.records['s3'].append(S3EventSource(record))
