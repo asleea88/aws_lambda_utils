@@ -23,25 +23,25 @@ inner_func2 = common_lambda_handler(False)(inner_func)
 def test_common_lambda_handler():
 
     # propagation
-    rtn = inner_func1(10, Context)
-    assert rtn == 10
+    rtn = inner_func1({'source': 'pytest'}, Context)
+    assert rtn == {'source': 'pytest'}
 
     with pytest.raises(Exception):
         inner_func1('exception', Context)
 
     # No propagation
-    rtn = inner_func2(10, Context)
-    assert rtn == 10
+    rtn = inner_func2({'source': 'pytest'}, Context)
+    assert rtn == {'source': 'pytest'}
 
     inner_func2('exception', Context)
 
 
 def test_retry_against_excpetion1():
 
-    func_mock = mock.MagicMock(side_effect=[Exception, Exception, 10])
+    func_mock = mock.MagicMock(side_effect=[Exception, Exception, {'source': 'pytest'}])
     retry_func_mock = retry_against_exception(func_mock, 3)
     rtn = retry_func_mock()
-    assert rtn == 10
+    assert rtn == {'source': 'pytest'}
 
 
 def test_retry_against_excpetion2():
