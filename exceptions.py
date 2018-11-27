@@ -1,37 +1,28 @@
-from traceback import format_exc
+class LambdaError(Exception):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
 
 
-class LambdaUtilsException(Exception):
-    def __init__(self, err_msg, **kwargs):
-        self.err_msg = err_msg
-        self.kwargs = kwargs
-        self.trace = format_exc()
+class TransientError(LambdaError):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
 
 
-class NoSuchOriginKey(LambdaUtilsException):
-    def __init__(self, err_msg, **kwargs):
-        super().__init__(err_msg, **kwargs)
+class PermanentError(LambdaError):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
 
 
-class ExceedMaximumRetry(LambdaUtilsException):
-    def __init__(self, err_msg, **kwargs):
-        super().__init__(err_msg, **kwargs)
-
-
-class UnexpectedError(LambdaUtilsException):
+class ExceedMaximumRetry(TransientError):
     def __init__(self, err_msg, **kwargs):
         super().__init__(err_msg, **kwargs)
 
 
-class InternalError(LambdaUtilsException):
-    """
-    err_msg
-        - 0-SizeObject
-        - NoRecord
-    """
+class InternalError(TransientError):
     def __init__(self, err_msg, **kwargs):
         super().__init__(err_msg, **kwargs)
 
 
-class Warming(Exception):
-    pass
+class UnexpectedError(PermanentError):
+    def __init__(self, err_msg, **kwargs):
+        super().__init__(err_msg, **kwargs)
