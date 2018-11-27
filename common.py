@@ -37,6 +37,7 @@ class common_lambda_handler:
                 if issubclass(e.__class__, PermanentError):
                     self.logger.error(err_msg)
                     self._handle_permanent_err()
+                    self.logger.info('Send message to DLQ')
                     return
 
                 # If an exception is not PermanentError,
@@ -63,8 +64,8 @@ class common_lambda_handler:
             return
 
         # TODO: If an error happens while sending a message to DLQ?
-        aws_client.send_message(
-            QueueUrl=self.dlq_url, MesssageBody=json.dumps(self.event)
+        aws_client['sqs'].send_message(
+            QueueUrl=self.dlq_url, MessageBody=json.dumps(self.event)
         )
 
     def _is_warming(self, event):
@@ -93,6 +94,9 @@ class sqs_delete_message:
         pass
 
     def __exit__(self, exc_type, exc_value, traceback):
+        if exc_type is None:
+            return
+
         if issubclass(exc_type, self.exp_list):
             self._handle_excption()
 

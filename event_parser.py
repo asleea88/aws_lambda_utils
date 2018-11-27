@@ -116,7 +116,10 @@ class SqsEventSource(EventSource):
             'messageId': record['messageId'],
             'receiptHandle': record['receiptHandle']
         }
-        self.logger.info('receiptHandler: %s' % record['receiptHandle'][:40])
+        self.logger.info(
+            'messageId: %s, receiptHandler: %s'
+            % (record['messageId'], record['receiptHandle'][:50])
+        )
         self.log_source(True)
 
 
